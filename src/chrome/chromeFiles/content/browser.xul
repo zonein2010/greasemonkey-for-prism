@@ -18,26 +18,19 @@
   <script type="application/x-javascript" src="chrome://greasemonkey/content/browser.js" />
   <script type="application/x-javascript" src="chrome://greasemonkey/content/accelimation.js" />
 
-  <popup id="contentAreaContextMenu">
+  <popup id="popup_content">
     <menuitem id="view-userscript"
       accesskey="&menu.show.accesskey;"
       label="&menu.show;"
-      insertbefore="context-openlink"
+      insertbefore="menuitem_selectAll"
       oncommand="GM_BrowserUI.viewContextItemClicked(event);" />
     <menuseparator id="install-userscript-sep"
-      insertbefore="context-openlink" />
+      insertbefore="menuitem_selectAll" />
   </popup>
 
-  <!-- Firefox -->
-  <menupopup id="menu_ToolsPopup">
+  <menupopup id="popup_main">
     <menu id="gm_general_menu"
-      insertbefore="javascriptConsole" />
-  </menupopup>
-
-  <!-- SeaMonkey -->
-  <menupopup id="taskPopup">
-    <menu id="gm_general_menu"
-      insertbefore="downloadMgr" />
+      insertbefore="menu_tools" />
   </menupopup>
 
   <!--
@@ -80,12 +73,12 @@
     </menupopup>
   </menu>
 
-  <statusbar id="status-bar">
+  <statusbar id="statusbar">
     <!-- NOTE: Local to statusbar tag scope -->
     <stringbundle id="gm-browser-bundle" src="chrome://greasemonkey/locale/gm-browser.properties" />
 
     <statusbarpanel id="gm-status"
-      insertafter="livemark-button"
+      insertafter="security"
     >
       <label id="gm-status-label"
         collapsed="true"
@@ -134,3 +127,4 @@
   </statusbar>
 
 </overlay>
+

@@ -14,7 +14,7 @@
     <em:iconURL>chrome://greasemonkey/content/icon_medium.png</em:iconURL>
 
     <em:name>Greasemonkey</em:name>
-    <em:description>A User Script Manager for Firefox</em:description>
+    <em:description>A User Script Manager for Prism</em:description>
 
     <em:contributor>Anthony Lieuallen; http://arantius.com</em:contributor>
     <em:contributor>Chris Feldmann; http://axlotl.net</em:contributor>
@@ -37,21 +37,12 @@
     <em:contributor>Sergio Abreu; http://sitedosergio.sitesbr.net</em:contributor>
     <em:contributor>Tommi Rautava</em:contributor>
 
-    <!-- Firefox -->
+    <!-- Prism -->
     <em:targetApplication>
       <Description>
-        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
-        <em:minVersion>1.5</em:minVersion>
-        <em:maxVersion>3.1b2</em:maxVersion>
-      </Description>
-    </em:targetApplication>
-
-    <!-- Songbird -->
-    <em:targetApplication>
-      <Description>
-        <em:id>songbird@songbirdnest.com</em:id>
-        <em:minVersion>0.3pre</em:minVersion>
-        <em:maxVersion>1.0.*</em:maxVersion>
+        <em:id>prism@developer.mozilla.org</em:id>
+		<em:minVersion>0.1</em:minVersion>
+		<em:maxVersion>0.8.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 

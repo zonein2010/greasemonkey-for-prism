@@ -5,7 +5,7 @@ GMMAX=${1-0}
 GMMIN=${2-8}
 GMREL=${3-0}
 GMBUILD=`date +"%Y%m%d"`
-GMNAME=greasemonkey
+GMNAME=greasemonkey-for-prism
 GMVER="$GMMAX.$GMMIN.$GMBUILD.$GMREL"
 GMXPI="$GMNAME-$GMVER.xpi"
 

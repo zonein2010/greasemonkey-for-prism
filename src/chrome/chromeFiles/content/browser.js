@@ -38,15 +38,15 @@ GM_BrowserUI.init = function() {
  */
 GM_BrowserUI.chromeLoad = function(e) {
   // get all required DOM elements
-  this.tabBrowser = document.getElementById("content");
-  this.appContent = document.getElementById("appcontent");
-  this.contextMenu = document.getElementById("contentAreaContextMenu");
+  this.browser = document.getElementById("browser_content");
+  this.appContent = document.getElementById("box_content");
+  this.contextMenu = document.getElementById("popup_content");
   this.statusImage = document.getElementById("gm-status-image");
   this.statusLabel = document.getElementById("gm-status-label");
   this.statusPopup = document.getElementById("gm-status-popup");
   this.statusEnabledItem = document.getElementById("gm-status-enabled-item");
   this.generalMenuEnabledItem = document.getElementById("gm-general-menu-enabled-item");
-  this.toolsMenu = document.getElementById("menu_ToolsPopup");
+  this.toolsMenu = document.getElementById("popup_main");
   this.bundle = document.getElementById("gm-browser-bundle");
 
   // seamonkey compat
@@ -78,7 +78,7 @@ GM_BrowserUI.chromeLoad = function(e) {
                           .getService(Components.interfaces.nsIWindowWatcher);
 
   // this gives us onLocationChange
-  this.tabBrowser.addProgressListener(this,
+  this.browser.addProgressListener(this,
     Components.interfaces.nsIWebProgress.NOTIFY_LOCATION);
 
   // update enabled icon
@@ -110,9 +110,11 @@ GM_BrowserUI.registerMenuCommand = function(menuCommand) {
  * gmIBrowserWindow.openInTab
  */
 GM_BrowserUI.openInTab = function(domWindow, url) {
-  if (this.isMyWindow(domWindow)) {
-    this.tabBrowser.addTab(url);
-  }
+  var ios = Components.classes["@mozilla.org/network/io-service;1"]
+                      .getService(Components.interfaces.nsIIOService);
+  Components.classes["@mozilla.org/uriloader/external-protocol-service;1"]
+            .getService(Components.interfaces.nsIExternalProtocolService)
+            .loadURI(ios.newURI(url, null, null));
 };
 
 /**
@@ -138,7 +140,7 @@ GM_BrowserUI.contentLoad = function(e) {
     commander = this.getCommander(unsafeWin);
 
     // if this content load is in the focused tab, attach the menuCommaander
-    if (unsafeWin == this.tabBrowser.selectedBrowser.contentWindow) {
+    if (unsafeWin == this.browser.selectedBrowser.contentWindow) {
       this.currentMenuCommander = commander;
       this.currentMenuCommander.attach();
     }
@@ -150,10 +152,12 @@ GM_BrowserUI.contentLoad = function(e) {
 
   // Show the greasemonkey install banner if we are navigating to a .user.js
   // file in a top-level tab.
+  /*
   if (href.match(/\.user\.js$/) && safeWin == safeWin.top) {
     var browser = this.tabBrowser.getBrowserForDocument(safeWin.document);
     this.showInstallBanner(browser);
   }
+  */
 };
 
 
@@ -230,10 +234,9 @@ GM_BrowserUI.startInstallScript = function(uri, timer) {
 GM_BrowserUI.showScriptView = function(scriptDownloader) {
   this.scriptDownloader_ = scriptDownloader;
 
-  var tab = this.tabBrowser.addTab(scriptDownloader.script.previewURL);
-  var browser = this.tabBrowser.getBrowserForTab(tab);
-
-  this.tabBrowser.selectedTab = tab;
+  if (window.confirm("Open " + scriptDownloader.script.previewURL + "to external browser ?")) {
+    this.openInTab(null, scriptDownloader.script.previewURL);
+  }
 };
 
 /**
@@ -273,8 +276,7 @@ GM_BrowserUI.onLocationChange = function(a,b,c) {
     this.currentMenuCommander = null;
   }
 
-  var menuCommander = this.getCommander(this.tabBrowser.selectedBrowser.
-                                        contentWindow);
+  var menuCommander = this.getCommander(this.browser.contentWindow);
 
   if (menuCommander) {
     this.currentMenuCommander = menuCommander;
@@ -321,7 +323,7 @@ GM_BrowserUI.contentUnload = function(e) {
  */
 GM_BrowserUI.chromeUnload = function() {
   GM_prefRoot.unwatch("enabled", this.enabledWatcher);
-  this.tabBrowser.removeProgressListener(this);
+  this.browser.removeProgressListener(this);
   this.gmSvc.unregisterBrowser(this);
   delete this.menuCommanders;
 };
@@ -402,13 +404,8 @@ GM_BrowserUI.getCommander = function(unsafeWin) {
  * Helper to determine if a given dom window is in this tabbrowser
  */
 GM_BrowserUI.isMyWindow = function(domWindow) {
-  var tabbrowser = getBrowser();
-  var browser;
-
-  for (var i = 0; browser = tabbrowser.browsers[i]; i++) {
-    if (browser.contentWindow == domWindow) {
-      return true;
-    }
+  if (this.browser.contentWindow == domWindow) {
+    return true;
   }
 
   return false;
@@ -476,7 +473,7 @@ function GM_showPopup(aEvent) {
     }
   }
 
-  var urls = uniq( urlsOfAllFrames( getBrowser().contentWindow ));
+  var urls = uniq( urlsOfAllFrames( GM_BrowserUI.browser.contentWindow ));
   var runsOnTop = scriptsMatching( [urls.shift()] ); // first url = top window
   var runsFramed = scriptsMatching( urls ); // remainder are all its subframes
 
