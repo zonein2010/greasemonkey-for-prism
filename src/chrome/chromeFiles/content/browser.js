@@ -644,6 +644,22 @@ GM_BrowserUI.installMenuItemClicked = function() {
   );
 };
 
+// for Mozilla Prism
+GM_BrowserUI.downloadScriptMenuItemClicked = function() {
+  var promptSvc = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+                            .getService(Components.interfaces.nsIPromptService2);
+  var urlData = {value: "http://"};
+  var ret = promptSvc.prompt(window, "Download User Script", "Where download from ?", urlData, null, {});
+  if (ret){
+    var ioSvc = Components.classes["@mozilla.org/network/io-service;1"]
+                          .getService(Components.interfaces.nsIIOService);
+    if (/\.user\.js(\?|$)/.test(urlData.value)){
+      var uri = ioSvc.newURI(urlData.value, null, null);
+      GM_BrowserUI.startInstallScript(uri);
+    }
+  }
+};
+
 GM_BrowserUI.viewContextItemClicked = function() {
   var uri = GM_BrowserUI.getUserScriptLinkUnderPointer();
 
@@ -659,3 +675,5 @@ GM_BrowserUI.manageMenuItemClicked = function() {
 
 log("calling init...");
 GM_BrowserUI.init();
+
+// vim: sw=2 ts=2 et:
