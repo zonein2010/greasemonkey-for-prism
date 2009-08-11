@@ -140,7 +140,7 @@ GM_BrowserUI.contentLoad = function(e) {
     commander = this.getCommander(unsafeWin);
 
     // if this content load is in the focused tab, attach the menuCommaander
-    if (unsafeWin == this.browser.selectedBrowser.contentWindow) {
+    if (unsafeWin == this.browser.contentWindow) {
       this.currentMenuCommander = commander;
       this.currentMenuCommander.attach();
     }
