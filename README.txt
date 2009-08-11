@@ -6,6 +6,8 @@ It's enable to use user scripts on Prism.
 == Features ==
 
 * can make user scripts to work
+* can download/install user scripts from the other domain
+  tools -> Greasemonkey -> Download User Script...
 
 == How to build ==
 
