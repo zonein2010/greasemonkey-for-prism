@@ -12,10 +12,6 @@ It's enable to use user scripts on Prism.
 * cd trunk/src
 * sh build.sh
 
-== Limits ==
-
-* Now cannot downloads and installs a user script from another domain.
-
 == How to install user scripts ==
 
 * manual install
