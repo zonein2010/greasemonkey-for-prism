@@ -65,6 +65,7 @@ GM_BrowserUI.chromeLoad = function(e) {
 
   // hook various events
   GM_listen(this.appContent, "DOMContentLoaded", GM_hitch(this, "contentLoad"));
+  GM_listen(this.sidebar, "DOMContentLoaded", GM_hitch(this, "contentLoad"));
   GM_listen(this.contextMenu, "popupshowing", GM_hitch(this, "contextMenuShowing"));
   GM_listen(this.toolsMenu, "popupshowing", GM_hitch(this, "toolsMenuShowing"));
 
@@ -222,7 +223,7 @@ GM_BrowserUI.startInstallScript = function(uri, timer) {
     return;
   }
 
-  this.scriptDownloader_ = new ScriptDownloader(window, uri, this.bundle);
+  this.scriptDownloader_ = new GM_ScriptDownloader(window, uri, this.bundle);
   this.scriptDownloader_.startInstall();
 };
 

@@ -50,7 +50,6 @@ var greasemonkeyService = {
     return this._config;
   },
   browserWindows: [],
-  updater: null,
 
 
   // nsISupports
@@ -112,15 +111,6 @@ var greasemonkeyService = {
     if (scripts.length > 0) {
       this.injectScripts(scripts, href, unsafeWin, chromeWin);
     }
-
-    // Need to wait until well after startup for prefs store and extension
-    // manager to be initialized. First page load is a convenient place.
-    if (!this.updater) {
-      // Note: the param to this has to match the extension ID in install.rdf
-      this.updater = new ExtensionUpdater(
-          "{e4a8a97b-f2ed-450b-b12d-ee082ba24781}");
-      this.updater.updatePeriodically();
-    }
   },
 
 
@@ -134,7 +124,6 @@ var greasemonkeyService = {
     loader.loadSubScript("chrome://greasemonkey/content/convert2RegExp.js");
     loader.loadSubScript("chrome://greasemonkey/content/miscapis.js");
     loader.loadSubScript("chrome://greasemonkey/content/xmlhttprequester.js");
-    loader.loadSubScript("chrome://greasemonkey/content/updater.js");
     //loggify(this, "GM_GreasemonkeyService");
   },
 
@@ -391,12 +380,22 @@ var greasemonkeyService = {
   },
 
   getFirebugConsole: function(unsafeContentWin, chromeWin) {
+    // If we can't find this object, there's no chance the rest of this
+    // function will work.
+    if ('undefined'==typeof chromeWin.Firebug) return null;
+
     try {
       chromeWin = chromeWin.top;
       var fbVersion = parseFloat(chromeWin.Firebug.version, 10);
       var fbConsole = chromeWin.Firebug.Console;
       var fbContext = chromeWin.TabWatcher &&
         chromeWin.TabWatcher.getContextByWindow(unsafeContentWin);
+
+      // Firebug 1.4 will give no context, when disabled for the current site.
+      // We can't run that way.
+      if ('undefined'==typeof fbContext) {
+        return null;
+      }
 
       function findActiveContext() {
         for (var i=0; i<fbContext.activeConsoleHandlers.length; i++) {
@@ -447,8 +446,6 @@ var greasemonkeyService = {
 };
 
 greasemonkeyService.wrappedJSObject = greasemonkeyService;
-
-//loggify(greasemonkeyService, "greasemonkeyService");
 
 
 
