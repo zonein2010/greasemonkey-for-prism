@@ -40,6 +40,7 @@ GM_BrowserUI.chromeLoad = function(e) {
   // get all required DOM elements
   this.browser = document.getElementById("browser_content");
   this.appContent = document.getElementById("box_content");
+  this.sidebar = document.getElementById("box_sidebar");
   this.contextMenu = document.getElementById("popup_content");
   this.statusImage = document.getElementById("gm-status-image");
   this.statusLabel = document.getElementById("gm-status-label");
