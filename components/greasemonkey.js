@@ -10,6 +10,21 @@ const appSvc = Cc["@mozilla.org/appshell/appShellService;1"]
 
 const gmSvcFilename = Components.stack.filename;
 
+const maxJSVersion = (function getMaxJSVersion() {
+  // Default to version 1.6, which FF1.5 and later support.
+  var jsVersion = 160;
+
+  var jsds = Cc["@mozilla.org/js/jsd/debugger-service;1"].getService()
+               .QueryInterface(Ci.jsdIDebuggerService);
+  jsds.on();
+  jsds.enumerateContexts({ enumerateContext: function(context) {
+    if (context.version > jsVersion) jsVersion = context.version;
+  }});
+  jsds.off();
+
+  return (jsVersion / 100).toString();
+})();
+
 function alert(msg) {
   Cc["@mozilla.org/embedcomp/prompt-service;1"]
     .getService(Ci.nsIPromptService)
@@ -247,7 +262,7 @@ var greasemonkeyService = {
       sandbox.GM_listValues = GM_hitch(storage, "listValues");
       sandbox.GM_getResourceURL = GM_hitch(resources, "getResourceURL");
       sandbox.GM_getResourceText = GM_hitch(resources, "getResourceText");
-      sandbox.GM_openInTab = GM_hitch(this, "openInTab", unsafeContentWin);
+      sandbox.GM_openInTab = GM_hitch(this, "openInTab", safeWin, chromeWin);
       sandbox.GM_xmlhttpRequest = GM_hitch(xmlhttpRequester,
                                            "contentStartRequest");
       sandbox.GM_registerMenuCommand = GM_hitch(this,
@@ -286,6 +301,10 @@ var greasemonkeyService = {
 
   registerMenuCommand: function(unsafeContentWin, commandName, commandFunc,
                                 accelKey, accelModifiers, accessKey) {
+    if (!GM_apiLeakCheck("GM_registerMenuCommand")) {
+      return;
+    }
+
     var command = {name: commandName,
                    accelKey: accelKey,
                    accelModifiers: accelModifiers,
@@ -298,12 +317,31 @@ var greasemonkeyService = {
     }
   },
 
-  openInTab: function(unsafeContentWin, url) {
-    var unsafeTop = new XPCNativeWrapper(unsafeContentWin, "top").top;
-
-    for (var i = 0; i < this.browserWindows.length; i++) {
-      this.browserWindows[i].openInTab(unsafeTop, url);
+  openInTab: function(safeContentWin, chromeWin, url) {
+    if (!GM_apiLeakCheck("GM_openInTab")) {
+      return undefined;
     }
+
+    var info = Cc["@mozilla.org/xre/app-info;1"]
+      .getService(Components.interfaces.nsIXULAppInfo);
+    if (parseFloat(info.version, 10) < 3.0) {
+      // Pre FF 3.0 wants the URL as the second argument.
+      var newTab = chromeWin.openNewTabWith(
+        url, safeContentWin.document.location.href, null, null, null, null);
+    } else {
+      // Post FF 3.0 wants the document as the second argument.
+      var newTab = chromeWin.openNewTabWith(
+        url, safeContentWin.document, null, null, null, null);
+    }
+
+    // Source:
+    // http://mxr.mozilla.org/mozilla-central/source/browser/base/content/browser.js#4448
+    var newWindow = chromeWin.gBrowser
+      .getBrowserForTab(newTab)
+      .docShell
+      .QueryInterface(Ci.nsIInterfaceRequestor)
+      .getInterface(Ci.nsIDOMWindow);
+    return newWindow;
   },
 
   evalInSandbox: function(code, codebase, sandbox, script) {
@@ -315,7 +353,7 @@ var greasemonkeyService = {
     try {
       // workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=307984
       var lineFinder = new Error();
-      Components.utils.evalInSandbox(code, sandbox);
+      Components.utils.evalInSandbox(code, sandbox, maxJSVersion);
     } catch (e) { // catches errors while running the script code
       try {
         if (e && "return not in function" == e.message)
