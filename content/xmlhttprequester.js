@@ -75,7 +75,21 @@ GM_xmlhttpRequester.prototype.chromeStartRequest = function(safeUrl, details) {
     }
   }
 
-  req.send((details.data) ? details.data : null);
+  var body = details.data ? details.data : null;
+  if (details.binary) {
+    // xhr supports binary?
+    if (!req.sendAsBinary) {
+      var err = new Error("Unavailable feature: " +
+              "This version of Firefox does not support sending binary data " +
+              "(you should consider upgrading to version 3 or newer.)");
+      GM_logError(err);
+      throw err;
+    }
+    req.sendAsBinary(body);
+  } else {
+    req.send(body);
+  }
+
   GM_log("< GM_xmlhttpRequest.chromeStartRequest");
 }
 
@@ -93,14 +107,18 @@ function(unsafeContentWin, req, event, details) {
       var responseState = {
         // can't support responseXML because security won't
         // let the browser call properties on it
-        responseText:req.responseText,
-        readyState:req.readyState,
-        responseHeaders:(req.readyState == 4 ?
-                         req.getAllResponseHeaders() :
-                         ""),
-        status:(req.readyState == 4 ? req.status : 0),
-        statusText:(req.readyState == 4 ? req.statusText : ""),
-        finalUrl:(req.readyState == 4 ? req.channel.URI.spec : "")
+        responseText: req.responseText,
+        readyState: req.readyState,
+        responseHeaders: null,
+        status: null,
+        statusText: null,
+        finalUrl: null
+      };
+      if (4 == req.readyState && 'onerror' != event) {
+        responseState.responseHeaders = req.getAllResponseHeaders();
+        responseState.status = req.status;
+        responseState.statusText = req.statusText;
+        finalUrl = req.channel.URI.spec;
       }
 
       // Pop back onto browser thread and call event handler.
