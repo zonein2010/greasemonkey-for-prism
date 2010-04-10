@@ -7,6 +7,10 @@ function GM_ScriptStorage(script) {
 }
 
 GM_ScriptStorage.prototype.setValue = function(name, val) {
+  if (2 !== arguments.length) {
+    throw new Error("Second argument not specified: Value");
+  }
+
   if (!GM_apiLeakCheck("GM_setValue")) {
     return;
   }
@@ -44,9 +48,12 @@ GM_Resources.prototype.getResourceText = function(name) {
 
 GM_Resources.prototype.getDep_ = function(name) {
   var resources = this.script.resources;
-  for (var i = 0, resource; resource = resources[i]; i++)
-    if (resource.name == name)
+  for (var i = 0, resource; resource = resources[i]; i++) {
+    if (resource.name == name) {
       return resource;
+    }
+  }
+
   throw new Error("No resource with name: " + name); // NOTE: Non localised string
 };
 
@@ -80,17 +87,15 @@ GM_ScriptStorage.prototype.listValues = function() {
   return this.prefMan.listValues();
 };
 
-// Based on Mark Pilgrim's GM_addGlobalStyle from
-// http://diveintogreasemonkey.org/patterns/add-css.html. Used by permission
-// under GPL: http://diveintogreasemonkey.org/license/gpl.html
 function GM_addStyle(doc, css) {
-  var head, style;
-  head = doc.getElementsByTagName("head")[0];
-  if (!head) { return; }
-  style = doc.createElement("style");
-  style.type = "text/css";
-  style.innerHTML = css;
-  head.appendChild(style);
+  var head = doc.getElementsByTagName("head")[0];
+  if (head) {
+    var style = doc.createElement("style");
+    style.textContent = css;
+    style.type = "text/css";
+    head.appendChild(style);
+  }
+  return style;
 }
 
 function GM_console(script) {

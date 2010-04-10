@@ -11,18 +11,20 @@ const appSvc = Cc["@mozilla.org/appshell/appShellService;1"]
 const gmSvcFilename = Components.stack.filename;
 
 const maxJSVersion = (function getMaxJSVersion() {
-  // Default to version 1.6, which FF1.5 and later support.
-  var jsVersion = 160;
+  var appInfo = Components
+      .classes["@mozilla.org/xre/app-info;1"]
+      .getService(Components.interfaces.nsIXULAppInfo);
+  var versionChecker = Components
+      .classes["@mozilla.org/xpcom/version-comparator;1"]
+      .getService(Components.interfaces.nsIVersionComparator);
 
-  var jsds = Cc["@mozilla.org/js/jsd/debugger-service;1"].getService()
-               .QueryInterface(Ci.jsdIDebuggerService);
-  jsds.on();
-  jsds.enumerateContexts({ enumerateContext: function(context) {
-    if (context.version > jsVersion) jsVersion = context.version;
-  }});
-  jsds.off();
+  // Firefox 3.5 and higher supports 1.8.
+  if (versionChecker.compare(appInfo.version, "3.5") >= 0) {
+    return "1.8";
+  }
 
-  return (jsVersion / 100).toString();
+  // Everything else supports 1.6.
+  return "1.6";
 })();
 
 function alert(msg) {
@@ -139,7 +141,6 @@ var greasemonkeyService = {
     loader.loadSubScript("chrome://greasemonkey/content/convert2RegExp.js");
     loader.loadSubScript("chrome://greasemonkey/content/miscapis.js");
     loader.loadSubScript("chrome://greasemonkey/content/xmlhttprequester.js");
-    //loggify(this, "GM_GreasemonkeyService");
   },
 
   shouldLoad: function(ct, cl, org, ctx, mt, ext) {
@@ -171,11 +172,11 @@ var greasemonkeyService = {
 
       if (!this.ignoreNextScript_) {
         if (!this.isTempScript(cl)) {
-          var winWat = Cc["@mozilla.org/embedcomp/window-watcher;1"]
-            .getService(Ci.nsIWindowWatcher);
-
-          if (winWat.activeWindow && winWat.activeWindow.GM_BrowserUI) {
-            winWat.activeWindow.GM_BrowserUI.startInstallScript(cl);
+          var win = Cc['@mozilla.org/appshell/window-mediator;1']
+            .getService(Ci.nsIWindowMediator)
+            .getMostRecentWindow("navigator:browser");
+          if (win && win.GM_BrowserUI) {
+            win.GM_BrowserUI.startInstallScript(cl);
             ret = Ci.nsIContentPolicy.REJECT_REQUEST;
           }
         }
@@ -242,7 +243,8 @@ var greasemonkeyService = {
 
       storage = new GM_ScriptStorage(script);
       xmlhttpRequester = new GM_xmlhttpRequester(unsafeContentWin,
-                                                 appSvc.hiddenDOMWindow);
+                                                 appSvc.hiddenDOMWindow,
+                                                 url);
       resources = new GM_Resources(script);
 
       sandbox.window = safeWin;
@@ -390,7 +392,7 @@ var greasemonkeyService = {
           );
         }
       } catch (e) { // catches errors we cause trying to inform the user
-	// Do nothing. More importantly: don't stop script incovation sequence.
+        // Do nothing. More importantly: don't stop script incovation sequence.
       }
     }
     return true; // did not need a (function() {...})() enclosure.
@@ -471,7 +473,7 @@ var greasemonkeyService = {
         dummyElm.parentNode.removeChild(dummyElm);
 
         return fbContext.consoleHandler.pop().handler;
-      } else if (1.3 == fbVersion || 1.4 == fbVersion) {
+      } else if (fbVersion >= 1.3) {
         fbConsole.injector.attachIfNeeded(fbContext, unsafeContentWin);
         return findActiveContext();
       }
@@ -548,6 +550,3 @@ Factory.createInstance = function(outer, iid) {
 function NSGetModule(compMgr, fileSpec) {
   return Module;
 }
-
-//loggify(Module, "greasemonkeyService:Module");
-//loggify(Factory, "greasemonkeyService:Factory");

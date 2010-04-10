@@ -1,6 +1,7 @@
-function GM_xmlhttpRequester(unsafeContentWin, chromeWindow) {
+function GM_xmlhttpRequester(unsafeContentWin, chromeWindow, originUrl) {
   this.unsafeContentWin = unsafeContentWin;
   this.chromeWindow = chromeWindow;
+  this.originUrl = originUrl;
 }
 
 // this function gets called by user scripts in content security scope to
@@ -16,47 +17,47 @@ GM_xmlhttpRequester.prototype.contentStartRequest = function(details) {
     return;
   }
 
-  // don't actually need the timer functionality, but this pops it
-  // out into chromeWindow's thread so that we get that security
-  // context.
   GM_log("> GM_xmlhttpRequest.contentStartRequest");
-
-  // important to store this locally so that content cannot trick us up with
-  // a fancy getter that checks the number of times it has been accessed,
-  // returning a dangerous URL the time that we actually use it.
-  var url = details.url;
-
-  // make sure that we have an actual string so that we can't be fooled with
-  // tricky toString() implementations.
-  if (typeof url != "string") {
-    throw new Error("Invalid url: url must be of type string");
-  }
 
   var ioService = Components.classes["@mozilla.org/network/io-service;1"]
                   .getService(Components.interfaces.nsIIOService);
-  var scheme = ioService.extractScheme(url);
+  try {
+    // Validate and parse the (possibly relative) given URL.
+    var originUri = ioService.newURI(this.originUrl, null, null);
+    var uri = ioService.newURI(details.url, null, originUri);
+    var url = uri.spec;
+  } catch (e) {
+    // A malformed URL won't be parsed properly.
+    throw new Error("Invalid URL: " + details.url);
+  }
 
   // This is important - without it, GM_xmlhttpRequest can be used to get
   // access to things like files and chrome. Careful.
-  switch (scheme) {
+  switch (uri.scheme) {
     case "http":
     case "https":
     case "ftp":
-      this.chromeWindow.setTimeout(
-        GM_hitch(this, "chromeStartRequest", url, details), 0);
+        var req = new this.chromeWindow.XMLHttpRequest();
+        GM_hitch(this, "chromeStartRequest", url, details, req)();
       break;
     default:
-      throw new Error("Invalid url: " + url);
+      throw new Error("Disallowed scheme in URL: " + details.url);
   }
 
   GM_log("< GM_xmlhttpRequest.contentStartRequest");
+
+  return {
+    abort: function() {
+      req.abort();
+    }
+  };
 };
 
 // this function is intended to be called in chrome's security context, so
 // that it can access other domains without security warning
-GM_xmlhttpRequester.prototype.chromeStartRequest = function(safeUrl, details) {
+GM_xmlhttpRequester.prototype.chromeStartRequest =
+function(safeUrl, details, req) {
   GM_log("> GM_xmlhttpRequest.chromeStartRequest");
-  var req = new this.chromeWindow.XMLHttpRequest();
 
   this.setupRequestEvent(this.unsafeContentWin, req, "onload", details);
   this.setupRequestEvent(this.unsafeContentWin, req, "onerror", details);
@@ -71,11 +72,27 @@ GM_xmlhttpRequester.prototype.chromeStartRequest = function(safeUrl, details) {
 
   if (details.headers) {
     for (var prop in details.headers) {
-      req.setRequestHeader(prop, details.headers[prop]);
+      if (details.headers.hasOwnProperty(prop)) {
+        req.setRequestHeader(prop, details.headers[prop]);
+      }
     }
   }
 
-  req.send((details.data) ? details.data : null);
+  var body = details.data ? details.data : null;
+  if (details.binary) {
+    // xhr supports binary?
+    if (!req.sendAsBinary) {
+      var err = new Error("Unavailable feature: " +
+              "This version of Firefox does not support sending binary data " +
+              "(you should consider upgrading to version 3 or newer.)");
+      GM_logError(err);
+      throw err;
+    }
+    req.sendAsBinary(body);
+  } else {
+    req.send(body);
+  }
+
   GM_log("< GM_xmlhttpRequest.chromeStartRequest");
 }
 
@@ -93,14 +110,18 @@ function(unsafeContentWin, req, event, details) {
       var responseState = {
         // can't support responseXML because security won't
         // let the browser call properties on it
-        responseText:req.responseText,
-        readyState:req.readyState,
-        responseHeaders:(req.readyState == 4 ?
-                         req.getAllResponseHeaders() :
-                         ""),
-        status:(req.readyState == 4 ? req.status : 0),
-        statusText:(req.readyState == 4 ? req.statusText : ""),
-        finalUrl:(req.readyState == 4 ? req.channel.URI.spec : "")
+        responseText: req.responseText,
+        readyState: req.readyState,
+        responseHeaders: null,
+        status: null,
+        statusText: null,
+        finalUrl: null
+      };
+      if (4 == req.readyState && 'onerror' != event) {
+        responseState.responseHeaders = req.getAllResponseHeaders();
+        responseState.status = req.status;
+        responseState.statusText = req.statusText;
+        responseState.finalUrl = req.channel.URI.spec;
       }
 
       // Pop back onto browser thread and call event handler.
