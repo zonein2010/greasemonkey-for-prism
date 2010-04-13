@@ -114,6 +114,9 @@
           <menupopup />
         </menu>
         <menuseparator />
+		<menuitem accesskey="D"
+          label="Download User Script..."
+          oncommand="GM_BrowserUI.downloadScriptMenuItemClicked(event);" />
         <menuitem accesskey="&menu.new.accesskey;"
           label="&menu.new;"
           oncommand="GM_BrowserUI.newUserScript();" />
