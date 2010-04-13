@@ -11,7 +11,6 @@ It's enable to use user scripts on Prism.
 
 == How to build ==
 
-* cd trunk/src
 * sh build.sh
 
 == How to install user scripts ==
