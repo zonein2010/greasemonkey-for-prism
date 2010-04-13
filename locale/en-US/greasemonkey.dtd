@@ -20,6 +20,8 @@
 <!ENTITY menu.new.accesskey "N">
 <!ENTITY menu.manage "Manage User Scripts...">
 <!ENTITY menu.manage.accesskey "M">
+<!ENTITY menu.downloadscript "Download User Script...">
+<!ENTITY menu.downloadscript.accesskey "D">
 <!ENTITY statusbar.noscripts "No scripts installed!">
 <!ENTITY statusbar.enabled "Enabled">
 <!ENTITY statusbar.enabled.accesskey "E">

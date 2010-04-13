@@ -54,10 +54,9 @@
         label="&menu.install;"
         hidden="true"
         oncommand="GM_BrowserUI.installMenuItemClicked(event);" />
-      <!-- TODO: use DTD -->
       <menuitem id="userscript-tools-download"
-        accesskey="D"
-        label="Download User Script..."
+        accesskey="&menu.downloadscript.accesskey;"
+        label="&menu.downloadscript;"
         oncommand="GM_BrowserUI.downloadScriptMenuItemClicked(event);" />
       <menuitem
         accesskey="&menu.manage.accesskey;"
@@ -114,8 +113,8 @@
           <menupopup />
         </menu>
         <menuseparator />
-		<menuitem accesskey="D"
-          label="Download User Script..."
+		<menuitem accesskey="&menu.downloadscript.accesskey;"
+		  label="&menu.downloadscript;"
           oncommand="GM_BrowserUI.downloadScriptMenuItemClicked(event);" />
         <menuitem accesskey="&menu.new.accesskey;"
           label="&menu.new;"
