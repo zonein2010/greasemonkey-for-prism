@@ -11,8 +11,7 @@ window.addEventListener("load", function() {
 
   // default the includes with the current page's url
   document.getElementById("includes").value =
-      window.opener.document.getElementById("content").selectedBrowser
-      .contentWindow.location.href;
+      window.opener.GM_BrowserUI.browser.contentWindow.location.href;
 }, false);
 
 ////////////////////////////////// functions ///////////////////////////////////
